@@ -1,10 +1,10 @@
 import pytest
 
-from domain.family_account import FamilyAccount
-from tests.single_log_event_store import SingleLogEventStore
+from sh_api.domain.family_account import FamilyAccount
+from sh_dendrite.single_log_event_store import SingleLogEventStore
 from sh_dendrite.aggregate_factory import AggregateFactory
-from setup_account.account_created_event import AccountCreatedEvent
-from setup_account.create_account_command import CreateAccountCommand
+from sh_api.setup_account.account_created_event import AccountCreatedEvent
+from sh_api.setup_account.create_account_command import CreateAccountCommand
 
 @pytest.fixture
 def context():

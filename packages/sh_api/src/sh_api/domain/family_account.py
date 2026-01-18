@@ -1,7 +1,7 @@
 from sh_dendrite.aggregate import Aggregate
 from sh_dendrite.event import Event
-from setup_account.account_created_event import AccountCreatedEvent
-from setup_account.create_account_command import CreateAccountCommand
+from sh_api.setup_account.account_created_event import AccountCreatedEvent
+from sh_api.setup_account.create_account_command import CreateAccountCommand
 
 class FamilyAccount(Aggregate):
     def __init__(self,

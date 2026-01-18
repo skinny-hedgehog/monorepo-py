@@ -6,7 +6,7 @@ import logging
 
 from pydantic import BaseModel
 
-from domain.ledger import Ledger, CreateLedgerCommand, CreditLedgerCommand, DebitLedgerCommand
+from sh_api.domain.ledger import Ledger, CreateLedgerCommand, CreditLedgerCommand, DebitLedgerCommand
 from sh_dendrite.aggregate_factory import AggregateFactory
 
 logger = logging.getLogger(__name__)

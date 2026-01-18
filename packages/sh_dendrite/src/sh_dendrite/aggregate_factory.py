@@ -45,7 +45,7 @@ class AggregateFactory:
 
             with tracer.start_span("replay_events") as replay_span:
                 for event in events:
-                    instance.on(event)
+                    instance._on_event(event)
                 replay_span.set_attribute("event_count", len(events))
 
         return instance

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from domain.family_account import FamilyAccount
-from setup_account.create_account_command import CreateAccountCommand
+from sh_api.domain.family_account import FamilyAccount
+from sh_api.setup_account.create_account_command import CreateAccountCommand
 from sh_dendrite.aggregate_factory import AggregateFactory
 
 

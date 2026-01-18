@@ -2,10 +2,12 @@
 name = "monorepo-py"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "boto3-stubs~=1.42.1",
+]
 
 [tool.uv.workspace]
 members = [
     "packages/sh_dendrite",
-    "packages/api",
+    "packages/sh_api",
 ]

@@ -22,10 +22,15 @@ class Aggregate(ABC):
         self.log_id = log_id
         self.event_store = event_store
         self.event_handlers = event_handlers
+        self.last_event_name: str | None = None
 
     @abstractmethod
     def on(self, event: Event) -> None:
         pass
+
+    def _on_event(self, event: Event) -> None:
+        self.last_event_name = event.event_name
+        self.on(event)
 
     def apply(self, event: Event) -> None:
         # ensure the event is applied in durable storage
