@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 class EventStore(ABC):
     @abstractmethod
-    def apply(self, log_id: str, event: Event):
+    def apply(self, log_id: str, event: Event, consistency_tag: str):
         pass
 
     @abstractmethod
@@ -12,5 +12,5 @@ class EventStore(ABC):
         pass
 
     @abstractmethod
-    def get_log_from(self, log_id: str, from_timestamp: datetime):
+    def get_log_from(self, log_id: str, starting_point: Event | datetime):
         pass

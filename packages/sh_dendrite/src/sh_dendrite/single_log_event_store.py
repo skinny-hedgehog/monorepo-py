@@ -8,7 +8,7 @@ class SingleLogEventStore(EventStore):
     def __init__(self, backing_store=[]):
         self.backing_store = backing_store
 
-    def apply(self, log_id: str, event: Event):
+    def apply(self, log_id: str, event: Event, consistency_tag):
         self.backing_store.append(event)
 
     def get_log(self, log_id: str):

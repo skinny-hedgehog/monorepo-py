@@ -10,4 +10,5 @@ dependencies = [
 members = [
     "packages/sh_dendrite",
     "packages/sh_api",
+    "packages/concurrency_test_harness",
 ]
