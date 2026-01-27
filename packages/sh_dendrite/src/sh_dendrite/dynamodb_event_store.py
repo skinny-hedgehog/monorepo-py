@@ -86,17 +86,17 @@ class DynamodbEventStore(EventStore):
         except ClientError as e:
             if e.response["Error"]["Code"] == "TransactionCanceledException":
                 cancellation_reasons = e.response.get("CancellationReasons", [])
-                print(f"Transaction failed. Cancellation reasons: {cancellation_reasons}")
+                logger.warning(f"Transaction failed. Cancellation reasons: {cancellation_reasons}")
                 for reason in cancellation_reasons:
-                    print(f"- Code: {reason.get('Code')}, Message: {reason.get('Message')}")
+                    logger.warning(f"- Code: {reason.get('Code')}, Message: {reason.get('Message')}")
                     # Example of checking a specific reason
                     if reason.get("Code") == "ConditionalCheckFailed":
-                        print("  -> A condition expression failed.")
+                        logger.warning("  -> A condition expression failed.")
                     elif reason.get("Code") == "TransactionConflict":
-                        print("  -> A concurrent transaction conflicted, consider retrying.")
+                        logger.warning("  -> A concurrent transaction conflicted, consider retrying.")
             else:
                 # Handle other potential ClientErrors
-                print(f"An unexpected error occurred: {e.response['Error']['Message']}")
+                logger.error(f"An unexpected error occurred: {e.response['Error']['Message']}")
             raise
 
 
@@ -125,6 +125,7 @@ class DynamodbEventStore(EventStore):
                     break
 
         events = []
+
         for item in all_items:
             sk = item.get('SK')
             logger.info(f"get_log: item with SK: {sk}")
