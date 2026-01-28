@@ -44,7 +44,7 @@ class Aggregate(ABC):
         applied_time = datetime.now(UTC)
         if event.event_id is None:
             event.event_id = f"{applied_time.strftime('%Y%m%d%H%M%S%f')[:-3]}_{event.event_name}"
-        event.applied_time = applied_time   
+        event.applied_time = applied_time
 
         # ensure the event is applied in durable storage
         with tracer.start_as_current_span("apply.event_store"):
