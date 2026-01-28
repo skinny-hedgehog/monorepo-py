@@ -5,7 +5,7 @@ from importlib import import_module
 @dataclass
 class Event:
     event_id: str | None = field(default=None, init=False)
-    created_time: datetime = field(default=datetime.now(UTC), init=False)
+    created_time: datetime = field(default_factory=lambda: datetime.now(UTC), init=False)
     applied_time: datetime | None = field(default=None, init=False)
 
 

@@ -7,6 +7,7 @@ from boto3.dynamodb.types import TypeSerializer
 from botocore.exceptions import ClientError
 from opentelemetry import trace
 
+from sh_dendrite.concurrency_violoation_error import ConcurrencyViolationError
 from sh_dendrite.event import Event
 from sh_dendrite.event_store import EventStore
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 LOG_METADATA_ITEM = "#LOG_METADATA"
+
 
 class DynamodbEventStore(EventStore):
     def __init__(self, table_name: str, region: str, profile: str = 'default') -> None:
@@ -87,16 +89,14 @@ class DynamodbEventStore(EventStore):
             if e.response["Error"]["Code"] == "TransactionCanceledException":
                 cancellation_reasons = e.response.get("CancellationReasons", [])
                 logger.warning(f"Transaction failed. Cancellation reasons: {cancellation_reasons}")
+
                 for reason in cancellation_reasons:
-                    logger.warning(f"- Code: {reason.get('Code')}, Message: {reason.get('Message')}")
-                    # Example of checking a specific reason
                     if reason.get("Code") == "ConditionalCheckFailed":
-                        logger.warning("  -> A condition expression failed.")
-                    elif reason.get("Code") == "TransactionConflict":
-                        logger.warning("  -> A concurrent transaction conflicted, consider retrying.")
-            else:
-                # Handle other potential ClientErrors
-                logger.error(f"An unexpected error occurred: {e.response['Error']['Message']}")
+                        raise ConcurrencyViolationError(
+                            message=f"could not update log metadata because the last applied event id does not match the client's event id {last_event}",
+                            code=reason.get("Code"),
+                            reason=reason.get("Message"),
+                        ) from e
             raise
 
 
