@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 
 from sh_dendrite.aggregate import Aggregate
-from sh_dendrite.concurrency_violoation_error import ConcurrencyViolationError
+from sh_dendrite.concurrency_violation_error import ConcurrencyViolationError
 from sh_dendrite.event import Event
 from sh_dendrite.event_store import EventStore
 
