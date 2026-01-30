@@ -11,7 +11,7 @@ from aiodynamo.http.httpx import HTTPX
 from aiodynamo.operations import Put, Update
 from opentelemetry import trace
 
-from sh_dendrite.concurrency_violoation_error import ConcurrencyViolationError
+from sh_dendrite.concurrency_violation_error import ConcurrencyViolationError
 from sh_dendrite.event import Event
 from sh_dendrite.event_store import EventStore
 
