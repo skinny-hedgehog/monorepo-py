@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from decimal import Decimal
 import logging
 
 from sh_dendrite.aggregate import Aggregate
@@ -11,33 +10,33 @@ logger = logging.getLogger(__name__)
 #commands
 @dataclass
 class CreateLedgerCommand:
-    initial_balance: Decimal
+    initial_balance: float
 
 @dataclass
 class CreditLedgerCommand:
-    amount: Decimal
+    amount: float
 
 @dataclass
 class DebitLedgerCommand:
-    amount: Decimal
+    amount: float
 
 # events
 @dataclass
 class LedgerCreatedEvent(Event):
     ledger_id: str
-    initial_balance: Decimal
+    initial_balance: float
 
 @dataclass
 class LedgerCreditedEvent(Event):
     ledger_id: str
-    amount: Decimal
-    current_balance: Decimal
+    amount: float
+    current_balance: float
 
 @dataclass
 class LedgerDebitEvent(Event):
     ledger_id: str
-    amount: Decimal
-    current_balance: Decimal
+    amount: float
+    current_balance: float
 
 # aggregate
 class Ledger(Aggregate):
@@ -57,17 +56,17 @@ class Ledger(Aggregate):
             case LedgerDebitEvent():
                 self.balance -= event.amount
 
-    def create_ledger(self, command: CreateLedgerCommand):
+    async def create_ledger(self, command: CreateLedgerCommand):
         event = LedgerCreatedEvent(self.log_id, command.initial_balance)
-        self.apply(event)
+        await self.apply(event)
 
-    def credit(self, command: CreditLedgerCommand):
+    async def credit(self, command: CreditLedgerCommand):
         event = LedgerCreditedEvent(self.log_id, command.amount, self.balance)
-        self.apply(event)
+        await self.apply(event)
 
-    def debit(self, command: DebitLedgerCommand):
+    async def debit(self, command: DebitLedgerCommand):
         event = LedgerDebitEvent(self.log_id, command.amount, self.balance)
-        self.apply(event)
+        await self.apply(event)
 
 # Note: at some point, it will likely make sense to create a base class for different
 # types of read models (e.g. RelationalReadModel, TodoListReadModel)

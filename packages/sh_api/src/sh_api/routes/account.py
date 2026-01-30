@@ -25,11 +25,11 @@ class AccountRouter:
         )
 
         account = self.aggregate_factory.new(FamilyAccount)
-        account.create_account(command)
+        await account.create_account(command)
         return account
 
     async def get_account(self, account_id: str):
-        account = self.aggregate_factory.load(FamilyAccount, account_id)
+        account = await self.aggregate_factory.load(FamilyAccount, account_id)
         return {
             "family_name": account.family_name,
             "admin_email": account.admin_email,

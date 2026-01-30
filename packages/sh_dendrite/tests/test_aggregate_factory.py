@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch, AsyncMock
 from typing import List
 
 from sh_dendrite.aggregate_factory import AggregateFactory
@@ -88,8 +88,9 @@ class TestAggregateFactoryNew:
 
 
 class TestAggregateFactoryLoad:
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_loads_aggregate_with_log_id(self, mock_tracer):
+    async def test_loads_aggregate_with_log_id(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -97,17 +98,18 @@ class TestAggregateFactoryLoad:
         mock_tracer.start_span.return_value.__exit__ = Mock(return_value=None)
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = []
+        event_store.get_log = AsyncMock(return_value=[])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        aggregate = factory.load(ConcreteAggregate, "existing-log-id")
+        aggregate = await factory.load(ConcreteAggregate, "existing-log-id")
 
         assert aggregate.log_id == "existing-log-id"
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_fetches_events_from_store(self, mock_tracer):
+    async def test_fetches_events_from_store(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -115,17 +117,18 @@ class TestAggregateFactoryLoad:
         mock_tracer.start_span.return_value.__exit__ = Mock(return_value=None)
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = []
+        event_store.get_log = AsyncMock(return_value=[])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        factory.load(ConcreteAggregate, "log-123")
+        await factory.load(ConcreteAggregate, "log-123")
 
         event_store.get_log.assert_called_once_with("log-123")
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_replays_events_on_aggregate(self, mock_tracer):
+    async def test_replays_events_on_aggregate(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -140,18 +143,19 @@ class TestAggregateFactoryLoad:
         event3.event_id = "event-3"
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = [event1, event2, event3]
+        event_store.get_log = AsyncMock(return_value=[event1, event2, event3])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        aggregate = factory.load(ConcreteAggregate, "log-123")
+        aggregate = await factory.load(ConcreteAggregate, "log-123")
 
         assert len(aggregate.replayed_events) == 3
         assert aggregate.replayed_events == [event1, event2, event3]
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_updates_last_event_name_after_replay(self, mock_tracer):
+    async def test_updates_last_event_name_after_replay(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -164,17 +168,18 @@ class TestAggregateFactoryLoad:
         event2.event_id = "event-2"
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = [event1, event2]
+        event_store.get_log = AsyncMock(return_value=[event1, event2])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        aggregate = factory.load(ConcreteAggregate, "log-123")
+        aggregate = await factory.load(ConcreteAggregate, "log-123")
 
         assert aggregate.last_event_name == "event-2"
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_handles_empty_event_log(self, mock_tracer):
+    async def test_handles_empty_event_log(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -182,18 +187,19 @@ class TestAggregateFactoryLoad:
         mock_tracer.start_span.return_value.__exit__ = Mock(return_value=None)
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = []
+        event_store.get_log = AsyncMock(return_value=[])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        aggregate = factory.load(ConcreteAggregate, "empty-log")
+        aggregate = await factory.load(ConcreteAggregate, "empty-log")
 
         assert aggregate.replayed_events == []
         assert aggregate.last_event_name is None
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_creates_tracing_spans(self, mock_tracer):
+    async def test_creates_tracing_spans(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -201,20 +207,21 @@ class TestAggregateFactoryLoad:
         mock_tracer.start_span.return_value.__exit__ = Mock(return_value=None)
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = []
+        event_store.get_log = AsyncMock(return_value=[])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        factory.load(ConcreteAggregate, "log-123")
+        await factory.load(ConcreteAggregate, "log-123")
 
         mock_tracer.start_as_current_span.assert_called_once_with("aggregate_load")
         span_names = [call[0][0] for call in mock_tracer.start_span.call_args_list]
         assert "fetch_events" in span_names
         assert "replay_events" in span_names
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_sets_span_attributes(self, mock_tracer):
+    async def test_sets_span_attributes(self, mock_tracer):
         mock_load_span = MagicMock()
         mock_fetch_span = MagicMock()
         mock_replay_span = MagicMock()
@@ -237,20 +244,21 @@ class TestAggregateFactoryLoad:
         event.event_id = "event-1"
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = [event]
+        event_store.get_log = AsyncMock(return_value=[event])
         log_id_generator = Mock(return_value="generated-id")
         event_handlers = {}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        factory.load(ConcreteAggregate, "log-123")
+        await factory.load(ConcreteAggregate, "log-123")
 
         mock_load_span.set_attribute.assert_any_call("aggregate_type", "ConcreteAggregate")
         mock_load_span.set_attribute.assert_any_call("log_id", "log-123")
         mock_fetch_span.set_attribute.assert_called_with("event_count", 1)
         mock_replay_span.set_attribute.assert_called_with("event_count", 1)
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate_factory.tracer')
-    def test_passes_event_handlers_to_loaded_aggregate(self, mock_tracer):
+    async def test_passes_event_handlers_to_loaded_aggregate(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
@@ -258,12 +266,12 @@ class TestAggregateFactoryLoad:
         mock_tracer.start_span.return_value.__exit__ = Mock(return_value=None)
 
         event_store = Mock(spec=EventStore)
-        event_store.get_log.return_value = []
+        event_store.get_log = AsyncMock(return_value=[])
         log_id_generator = Mock(return_value="generated-id")
         handler = Mock(spec=EventHandler)
         event_handlers = {Event: [handler]}
 
         factory = AggregateFactory(event_store, log_id_generator, event_handlers)
-        aggregate = factory.load(ConcreteAggregate, "log-123")
+        aggregate = await factory.load(ConcreteAggregate, "log-123")
 
         assert aggregate.event_handlers == event_handlers

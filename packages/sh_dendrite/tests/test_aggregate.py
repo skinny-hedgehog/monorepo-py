@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch, AsyncMock
 from datetime import datetime, UTC
 
 from sh_dendrite.aggregate import Aggregate, uuid_log_id_generator
@@ -82,107 +82,121 @@ class TestAggregateOnEvent:
 
 
 class TestAggregateApply:
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_sets_event_id_when_none(self, mock_tracer):
+    async def test_sets_event_id_when_none(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = None
         event.event_name = "TestEvent"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         assert event.event_id is not None
         assert "TestEvent" in event.event_id
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_preserves_existing_event_id(self, mock_tracer):
+    async def test_preserves_existing_event_id(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "existing-id"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         assert event.event_id == "existing-id"
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_sets_applied_time(self, mock_tracer):
+    async def test_sets_applied_time(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
         before = datetime.now(UTC)
-        aggregate.apply(event)
+        await aggregate.apply(event)
         after = datetime.now(UTC)
 
         assert before <= event.applied_time <= after
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_calls_event_store_apply(self, mock_tracer):
+    async def test_calls_event_store_apply(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         event_store.apply.assert_called_once_with("log-123", event, None)
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_passes_last_event_name_to_store(self, mock_tracer):
+    async def test_passes_last_event_name_to_store(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
         aggregate.last_event_name = "previous-event"
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         event_store.apply.assert_called_once_with("log-123", event, "previous-event")
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_calls_on_method(self, mock_tracer):
+    async def test_calls_on_method(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         assert event in aggregate.applied_events
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_dispatches_registered_handlers(self, mock_tracer):
+    async def test_dispatches_registered_handlers(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         handler1 = Mock()
         handler2 = Mock()
 
@@ -192,37 +206,41 @@ class TestAggregateApply:
         handlers = {type(event): [handler1, handler2]}
         aggregate = ConcreteAggregate("log-123", event_store, handlers)
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         handler1.handle_event.assert_called_once_with([event])
         handler2.handle_event.assert_called_once_with([event])
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_no_handlers_called_when_none_registered(self, mock_tracer):
+    async def test_no_handlers_called_when_none_registered(self, mock_tracer):
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock()
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock()
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
         # Should not raise
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
+    @pytest.mark.asyncio
     @patch('sh_dendrite.aggregate.tracer')
-    def test_creates_tracing_spans(self, mock_tracer):
+    async def test_creates_tracing_spans(self, mock_tracer):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value = mock_span
 
         event_store = Mock(spec=EventStore)
+        event_store.apply = AsyncMock()
         aggregate = ConcreteAggregate("log-123", event_store)
 
         event = Mock(spec=Event)
         event.event_id = "test-id"
 
-        aggregate.apply(event)
+        await aggregate.apply(event)
 
         span_names = [call[0][0] for call in mock_tracer.start_as_current_span.call_args_list]
         assert "apply.event_store" in span_names

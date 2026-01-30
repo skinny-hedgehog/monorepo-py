@@ -1,8 +1,7 @@
 import argparse
+import asyncio
 import logging
 import os
-import time
-from decimal import Decimal
 
 from concurrency_ledger import ConcurrencyLedger
 from sh_dendrite.aggregate import uuid_log_id_generator
@@ -13,35 +12,75 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('botocore').setLevel(logging.WARNING)
 logging.getLogger('boto3').setLevel(logging.WARNING)
 
-
-factory = AggregateFactory(
-    DynamodbEventStore(os.getenv('EVENT_STORE_TABLE_NAME'), os.getenv('AWS_REGION'), os.getenv('AWS_PROFILE')),
-    uuid_log_id_generator,{})
-
+# Global variables for event store and factory
+event_store: DynamodbEventStore | None = None
+factory: AggregateFactory | None = None
 active_ledger: ConcurrencyLedger | None = None
 
-def create_ledger():
+
+async def initialize():
+    """Initialize the event store and factory"""
+    global event_store, factory
+
+    event_store = DynamodbEventStore(
+        os.getenv('EVENT_STORE_TABLE_NAME'),
+        os.getenv('AWS_REGION'),
+        os.getenv('AWS_PROFILE')
+    )
+
+    # Initialize the async client
+    await event_store._ensure_client()
+
+    factory = AggregateFactory(
+        event_store,
+        uuid_log_id_generator,
+        {}
+    )
+
+
+async def cleanup():
+    """Cleanup resources"""
+    global event_store
+    if event_store:
+        await event_store.close()
+
+
+async def create_ledger():
     print("Creating ledger...")
     global active_ledger
     active_ledger = factory.new(ConcurrencyLedger)
-    active_ledger.create_ledger(Decimal(0.0))
+    await active_ledger.create_ledger(0.0)
     print(f"Active ledger: {active_ledger.log_id} created with initial balance of {active_ledger.balance}")
 
 
-def update_ledger(ledger_name: str, sleep_time: float = 0.0):
+async def update_ledger(ledger_name: str, sleep_time: float = 0.0):
     global active_ledger
 
-    active_ledger = factory.load(ConcurrencyLedger, ledger_name)
+    active_ledger = await factory.load(ConcurrencyLedger, ledger_name)
     print(f"Active ledger: {active_ledger.log_id} fetched with balance of {active_ledger.balance}")
 
     if sleep_time > 0:
         print(f"Sleeping for {sleep_time} seconds...")
-        time.sleep(sleep_time)
+        await asyncio.sleep(sleep_time)
 
     print(f"Updating ledger: {ledger_name}")
-    active_ledger.update_ledger(Decimal(1.0))
+    await active_ledger.update_ledger(1.0)
 
     print(f"Active ledger: {active_ledger.log_id} updated with balance of {active_ledger.balance}")
+
+
+async def async_main(args):
+    """Async main function that handles commands"""
+    await initialize()
+
+    try:
+        match args.command:
+            case "create_ledger":
+                await create_ledger()
+            case "update_ledger":
+                await update_ledger(args.ledger_name, args.sleep_time)
+    finally:
+        await cleanup()
 
 
 def main():
@@ -58,11 +97,8 @@ def main():
 
     args = parser.parse_args()
 
-    match args.command:
-        case "create_ledger":
-            create_ledger()
-        case "update_ledger":
-            update_ledger(args.ledger_name, args.sleep_time)
+    # Run the async main function
+    asyncio.run(async_main(args))
 
 
 if __name__ == "__main__":

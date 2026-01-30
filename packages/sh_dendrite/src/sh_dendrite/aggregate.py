@@ -33,13 +33,13 @@ class Aggregate(ABC):
         self.last_event_name = event.event_id
         self.on(event)
 
-    def reload(self) -> None:
+    async def reload(self) -> None:
         with tracer.start_as_current_span("reload.aggregate"):
-            events = self.event_store.get_log(self.log_id)
+            events = await self.event_store.get_log(self.log_id)
             for event in events:
                 self._on_event(event)
 
-    def apply(self, event: Event) -> None:
+    async def apply(self, event: Event) -> None:
         # set key values on the event before persisting
         applied_time = datetime.now(UTC)
         if event.event_id is None:
@@ -48,7 +48,7 @@ class Aggregate(ABC):
 
         # ensure the event is applied in durable storage
         with tracer.start_as_current_span("apply.event_store"):
-            self.event_store.apply(self.log_id, event, self.last_event_name)
+            await self.event_store.apply(self.log_id, event, self.last_event_name)
 
         # apply the event to the aggregate
         with tracer.start_as_current_span("apply.event_sourcing_handler"):

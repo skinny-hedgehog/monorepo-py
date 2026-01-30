@@ -27,7 +27,7 @@ class FamilyAccount(Aggregate):
             case _:
                 raise ValueError(f"Unhandled event type: {type(event)}")
 
-    def create_account(self, command: CreateAccountCommand):
+    async def create_account(self, command: CreateAccountCommand):
         # TODO: validate the command
         #  ensure that an aggregate cannot be created if the ID already exists in the event store
 
@@ -40,4 +40,4 @@ class FamilyAccount(Aggregate):
             kids=command.kids
         )
 
-        self.apply(event)
+        await self.apply(event)
