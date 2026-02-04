@@ -1,12 +1,10 @@
-from decimal import Decimal
-
 from fastapi import APIRouter
 import logging
 
 
 from pydantic import BaseModel
 
-from domain.ledger import Ledger, CreateLedgerCommand, CreditLedgerCommand, DebitLedgerCommand
+from sh_api.domain.ledger import Ledger, CreateLedgerCommand, CreditLedgerCommand, DebitLedgerCommand
 from sh_dendrite.aggregate_factory import AggregateFactory
 
 logger = logging.getLogger(__name__)
@@ -25,7 +23,7 @@ class LedgerRouter:
 
     async def get_ledger(self, ledger_id: str):
         logger.info(f"Getting ledger {ledger_id}")
-        ledger = self.aggregate_factory.load(Ledger, ledger_id)
+        ledger = await self.aggregate_factory.load(Ledger, ledger_id)
         return {
             "ledger": ledger_id,
             "balance": ledger.balance,
@@ -34,8 +32,8 @@ class LedgerRouter:
     async def create_ledger(self):
         ledger = self.aggregate_factory.new(Ledger)
 
-        command = CreateLedgerCommand(initial_balance=Decimal("500.00"))
-        ledger.create_ledger(command)
+        command = CreateLedgerCommand(initial_balance=500.00)
+        await ledger.create_ledger(command)
 
         return {
             "ledger_id": ledger.log_id,
@@ -43,13 +41,13 @@ class LedgerRouter:
         }
 
     class CreditDebitRequest(BaseModel):
-        amount: Decimal
+        amount: float
 
     async def credit_ledger(self, ledger_id: str, request: CreditDebitRequest):
-        ledger = self.aggregate_factory.load(Ledger, ledger_id)
+        ledger = await self.aggregate_factory.load(Ledger, ledger_id)
 
         amount = request.amount
-        ledger.credit(CreditLedgerCommand(amount))
+        await ledger.credit(CreditLedgerCommand(amount))
 
         return {
             "ledger_id": ledger.log_id,
@@ -57,10 +55,10 @@ class LedgerRouter:
         }
 
     async def debit_ledger(self, ledger_id: str, request: CreditDebitRequest):
-        ledger = self.aggregate_factory.load(Ledger, ledger_id)
+        ledger = await self.aggregate_factory.load(Ledger, ledger_id)
 
         amount = request.amount
-        ledger.debit(DebitLedgerCommand(amount))
+        await ledger.debit(DebitLedgerCommand(amount))
 
         return {
             "ledger_id": ledger.log_id,

@@ -1,0 +1,14 @@
+[project]
+name = "concurrency-test-harness"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "opentelemetry-distro>=0.60b1",
+    "opentelemetry-exporter-otlp>=1.39.1",
+    "sh-dendrite",
+]
+
+[tool.uv.sources]
+sh-dendrite = { workspace = true }

@@ -29,7 +29,7 @@ class AggregateFactory:
 
         return instance
 
-    def load(self,
+    async def load(self,
              aggregate_type: Type[A],
              log_id: str) -> A:
 
@@ -40,12 +40,12 @@ class AggregateFactory:
             instance = aggregate_type(log_id, self.event_store, self.event_handlers)
 
             with tracer.start_span("fetch_events") as fetch_span:
-                events = self.event_store.get_log(log_id)
+                events = await self.event_store.get_log(log_id)
                 fetch_span.set_attribute("event_count", len(events))
 
             with tracer.start_span("replay_events") as replay_span:
                 for event in events:
-                    instance.on(event)
+                    instance._on_event(event)
                 replay_span.set_attribute("event_count", len(events))
 
         return instance

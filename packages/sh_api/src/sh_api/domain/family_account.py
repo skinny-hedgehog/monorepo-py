@@ -1,7 +1,7 @@
 from sh_dendrite.aggregate import Aggregate
 from sh_dendrite.event import Event
-from setup_account.account_created_event import AccountCreatedEvent
-from setup_account.create_account_command import CreateAccountCommand
+from sh_api.setup_account.account_created_event import AccountCreatedEvent
+from sh_api.setup_account.create_account_command import CreateAccountCommand
 
 class FamilyAccount(Aggregate):
     def __init__(self,
@@ -27,7 +27,7 @@ class FamilyAccount(Aggregate):
             case _:
                 raise ValueError(f"Unhandled event type: {type(event)}")
 
-    def create_account(self, command: CreateAccountCommand):
+    async def create_account(self, command: CreateAccountCommand):
         # TODO: validate the command
         #  ensure that an aggregate cannot be created if the ID already exists in the event store
 
@@ -40,4 +40,4 @@ class FamilyAccount(Aggregate):
             kids=command.kids
         )
 
-        self.apply(event)
+        await self.apply(event)

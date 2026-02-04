@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from domain.family_account import FamilyAccount
-from setup_account.create_account_command import CreateAccountCommand
+from sh_api.domain.family_account import FamilyAccount
+from sh_api.setup_account.create_account_command import CreateAccountCommand
 from sh_dendrite.aggregate_factory import AggregateFactory
 
 
@@ -25,11 +25,11 @@ class AccountRouter:
         )
 
         account = self.aggregate_factory.new(FamilyAccount)
-        account.create_account(command)
+        await account.create_account(command)
         return account
 
     async def get_account(self, account_id: str):
-        account = self.aggregate_factory.load(FamilyAccount, account_id)
+        account = await self.aggregate_factory.load(FamilyAccount, account_id)
         return {
             "family_name": account.family_name,
             "admin_email": account.admin_email,

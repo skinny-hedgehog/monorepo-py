@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 
 class EventStore(ABC):
     @abstractmethod
-    def apply(self, log_id: str, event: Event):
+    async def apply(self, log_id: str, event: Event, consistency_tag: str):
         pass
 
     @abstractmethod
-    def get_log(self, log_id: str):
+    async def get_log(self, log_id: str):
         pass
 
     @abstractmethod
-    def get_log_from(self, log_id: str, from_timestamp: datetime):
+    async def get_log_from(self, log_id: str, starting_point: Event | datetime):
         pass
